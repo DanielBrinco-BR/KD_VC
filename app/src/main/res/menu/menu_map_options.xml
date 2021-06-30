@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/search_by_data"
+        android:gravity="center_horizontal"
+        android:icon="@drawable/ic_baseline_search_24"
+        app:showAsAction="ifRoom"
+        android:title="@string/search_by_data" />
+    <item
+        android:title="@string/map_types">
+        <menu>
+            <item
+                android:id="@+id/normal_map"
+                android:title="@string/normal_map"
+                app:showAsAction="never" />
+            <item
+                android:id="@+id/hybrid_map"
+                android:title="@string/hybrid_map"
+                app:showAsAction="never" />
+            <item
+                android:id="@+id/satellite_map"
+                android:title="@string/satellite_map"
+                app:showAsAction="never" />
+            <item
+                android:id="@+id/terrain_map"
+                android:title="@string/terrain_map"
+                app:showAsAction="never" />
+        </menu>
+    </item>
+</menu>

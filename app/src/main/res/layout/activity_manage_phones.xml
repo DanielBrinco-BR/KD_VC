@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginTop="5dp"
+    android:layout_marginBottom="5dp"
+    android:orientation="vertical">
+
+    <EditText
+        android:id="@+id/edit_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/min_height"
+        android:fontFamily="sans-serif-light"
+        android:hint="@string/hint_name"
+        android:inputType="textAutoComplete"
+        android:layout_margin="@dimen/big_padding"
+        android:textSize="18sp" />
+
+    <EditText
+        android:id="@+id/edit_number"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/min_height"
+        android:fontFamily="sans-serif-light"
+        android:hint="@string/hint_number"
+        android:inputType="textAutoComplete"
+        android:layout_margin="@dimen/big_padding"
+        android:textSize="18sp" />
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:layout_gravity="center"
+        android:layout_margin="@dimen/big_padding"
+        app:cardCornerRadius="150dp"
+        app:strokeWidth="1dp"
+        app:strokeColor="@color/colorPrimary">
+
+        <ImageView
+            android:id="@+id/pictureImageView"
+            android:layout_width="300dp"
+            android:layout_height="300dp"
+            android:contentDescription="@string/contact_picture"
+            android:scaleType="centerCrop" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <Button
+            android:id="@+id/button_save"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_gravity="center_horizontal"
+            android:background="@color/colorPrimary"
+            android:text="@string/button_save"
+            android:drawableLeft="@drawable/ic_baseline_person_add_alt_1_24"
+            android:layout_margin="@dimen/big_padding"
+            android:textColor="@color/buttonLabel" />
+
+        <Button
+            android:id="@+id/button_delete"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_gravity="center_horizontal"
+            android:background="@color/colorPrimary"
+            android:drawableLeft="@drawable/ic_baseline_person_remove_alt_1_24"
+            android:text="@string/button_delete"
+            android:layout_margin="@dimen/big_padding"
+            android:textColor="@color/buttonLabel" />
+
+        <!--
+        <ImageButton
+            android:id="@+id/button_save"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:src="@mipmap/save_contact_foreground"
+            android:background="@null"
+            android:contentDescription="@string/salvar_contato" />
+
+        <ImageButton
+            android:id="@+id/button_delete"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:src="@mipmap/delete_contact_foreground"
+            android:background="@null"
+            android:contentDescription="@string/deletar_contato" />
+
+        <ImageButton
+            android:id="@+id/button_return"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:contentDescription="@string/retornar"
+            android:src="@mipmap/return_icon_foreground"
+            android:background="@null"/> -->
+    </LinearLayout>
+
+</LinearLayout>

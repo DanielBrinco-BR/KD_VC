@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/stop_start"
+        android:gravity="center_horizontal"
+        app:showAsAction="ifRoom"
+        android:title="@string/start_tracker" />
+    <item
+        android:id="@+id/manage_phones"
+        android:title="@string/manage_phones"
+        app:showAsAction="never" />
+    <item
+        android:title="@string/config">
+        <menu>
+            <item
+                android:id="@+id/start_stop_service"
+                android:title="@string/start_stop_service"
+                app:showAsAction="never" />
+        </menu>
+    </item>
+</menu>

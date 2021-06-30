@@ -1,0 +1,34 @@
+<resources>
+    <string name="app_name">KdVc</string>
+    <string name="hint_name">Nome…</string>
+    <string name="hint_number">Número…</string>
+    <string name="button_image">Foto</string>
+    <string name="empty_not_saved">Word not saved because it is empty.</string>
+    <string name="add_word">Add word</string>
+    <string name="change_image">Trocar Imagem</string>
+    <string name="contact_image">Imagem do Contato</string>
+    <string name="contact_picture">Foto do Contato</string>
+    <string name="button_save">Salvar</string>
+    <string name="manage_phones">Gerenciar Telefones</string>
+    <string name="config">Configurações</string>
+    <string name="start_stop_service">Ativar/Desativar Rastreador</string>
+    <string name="button_update">Atualizar Contato</string>
+    <string name="button_delete">Remover</string>
+    <string name="button_change_image">Trocar Foto</string>
+    <string name="button_exit">Sair</string>
+    <string name="salvar_contato">Salvar Contato</string>
+    <string name="deletar_contato">Apagar Contato</string>
+    <string name="retornar">Retornar</string>
+    <string name="map_icon">Ir para o Mapa</string>
+    <string name="title_activity_maps">Mapa</string>
+    <string name="start_tracker">Ativar Rastreador</string>
+    <string name="map_types">Tipos de Mapa</string>
+    <string name="normal_map">Normal</string>
+    <string name="hybrid_map">Híbrido</string>
+    <string name="satellite_map">Satélite</string>
+    <string name="terrain_map">Terreno</string>
+    <string name="find_by_date">Filtrar por data</string>
+    <string name="busca_por_data">Busca por Data</string>
+    <string name="spinner">Filtrar por Data</string>
+    <string name="search_by_data">Pesquisar por Data</string>
+</resources>
