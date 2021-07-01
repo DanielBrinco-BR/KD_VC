@@ -193,7 +193,7 @@ class MainActivity : AppCompatActivity() {
         // do último telefone capturado pelo observer:
         phoneViewModel.findLastPhoneData().observe(this, Observer { phoneData ->
             try {
-                var formattedPhoneNumber = phoneData.phoneNumber.substring(3)
+                var formattedPhoneNumber = phoneData.phoneNumber.substring(2)
                 formattedPhoneNumber = "(" + formattedPhoneNumber.substring(0, 2) + ") " + formattedPhoneNumber.substring(2, 7) + "-" + formattedPhoneNumber.substring(7)
 
                 val title = formattedPhoneNumber + " - " + phoneData.date + " - " + phoneData.time
@@ -224,7 +224,12 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         Log.i("KadeVc","MainActivity.onResume()")
-        checkUpdatesFromServer(this)
+        try {
+            checkUpdatesFromServer(this)
+            adapter.notifyDataSetChanged()
+        } catch(e: Exception) {
+            Log.e(TAG, "MainActivity.onResume() - Exception: ${e.message} \n ${e.stackTraceToString()}")
+        }
     }
 
     /*
