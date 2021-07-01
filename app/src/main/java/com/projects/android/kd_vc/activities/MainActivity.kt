@@ -429,12 +429,12 @@ class MainActivity : AppCompatActivity() {
         builder.setTitle("Rastreador GPS")
         builder.setMessage(message)
 
-        builder.setPositiveButton("Sim") { dialog, which ->
+        builder.setPositiveButton("Sim") { _, _ ->
             Log.i(TAG, "MainActivity.showDialog() - Start Button: Sim")
             actionOnService(action)
         }
 
-        builder.setNeutralButton("Sair") { dialog, which ->
+        builder.setNeutralButton("Sair") { _, _ ->
             Log.i(TAG, "MainActivity.showDialog() - Neutral Button: Sair")
         }
         builder.show()
@@ -445,7 +445,7 @@ class MainActivity : AppCompatActivity() {
         builder.setTitle(title)
         builder.setMessage(message)
 
-        builder.setNeutralButton("Sair") { dialog, which ->
+        builder.setNeutralButton("Sair") { _, _ ->
             Log.i(TAG, "MapsActivity.showDialog() - Neutral Button: Sair")
         }
         builder.show()

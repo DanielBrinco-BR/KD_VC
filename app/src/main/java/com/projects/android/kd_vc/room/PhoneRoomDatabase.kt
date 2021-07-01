@@ -23,26 +23,6 @@ abstract class PhoneRoomDatabase : RoomDatabase() {
             INSTANCE?.let { database ->
                 scope.launch {
                     val phoneDao = database.phoneDao()
-
-                    /*
-                    if(phoneDao.countPhoneData() == 0) {
-                        Log.i(TAG, "PhoneRoomDatabase.PhoneDatabaseCallback.onCreate() - countPhoneData() == 0")
-                        val data = PhoneData(
-                            "12991516295", "0.0", "0.0",
-                            "0.0", "01-01-1900", "00:00:00")
-
-                        phoneDao.insertNewPhoneData(data)
-                    }
-
-                    if(phoneDao.countPhones() == 0) {
-                        Log.i("KD_VC?", "PhoneRoomDatabase.PhoneDatabaseCallback.onCreate() - countPhones() == 0")
-                        val imageUri = R.mipmap.default_image_round
-                        val phone1 = Phone("+5512991516295", "Eu", imageUri.toString())
-                        val phone2 = Phone("+5512991270763", "Sandra", imageUri.toString())
-                        phoneDao.insert(phone1)
-                        phoneDao.insert(phone2)
-                    }
-                    */
                 }
             }
         }

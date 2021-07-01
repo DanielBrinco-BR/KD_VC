@@ -13,7 +13,6 @@ import android.os.IBinder
 import android.os.PowerManager
 import android.os.SystemClock
 import android.provider.Settings
-import android.telephony.SmsManager
 import android.telephony.TelephonyManager
 import android.util.Log
 import android.widget.Toast
@@ -24,12 +23,10 @@ import com.projects.android.kd_vc.R
 import com.projects.android.kd_vc.activities.MainActivity
 import com.projects.android.kd_vc.retrofit.PhoneDataInfo
 import com.projects.android.kd_vc.retrofit.RestApiManager
-import com.projects.android.kd_vc.room.PhoneRoomDatabase
 import com.projects.android.kd_vc.utils.*
 import com.projects.android.kd_vc.utils.Encryption.AESEncyption.decrypt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -263,12 +260,8 @@ class EndlessService : Service() {
                     appendLog("KD_VC? - EndlessService.getLocationUpdates().locationCallback.onLocationResult() - $latitude, $longitude, $accuracy, Extras: $batteryLevel, $wifiSsId, $hasInternet, $networkType", applicationContext)
 
                     if(accuracy <= 20.0) {
-                        Log.d(TAG, "EndlessService.getLocationUpdates.locationCallback.onLocationResult() - accuracy <= 20.0 - Call sendSMS()")
-
-                        // Test send to Cloud:
+                        Log.d(TAG, "EndlessService.getLocationUpdates.locationCallback.onLocationResult() - accuracy <= 20.0 - Call sendDataToCloud()")
                         sendDataToCloud(location.latitude.toString(), location.longitude.toString(), location.accuracy.toString(), batteryLevel, wifiSsId, hasInternet, networkType)
-
-                        //sendSMS(location.latitude.toString(), location.longitude.toString(), location.accuracy.toString(), batteryLevel, wifiSsId, hasInternet, networkType)
                     }
                 }
             }
@@ -296,32 +289,6 @@ class EndlessService : Service() {
     // stop location updates
     private fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
-    }
-
-    fun sendSMS(latitude: String, longitude: String, accuracy: String, batteryLevel: String,
-                wifiSsId: String, hasInternet: String, networkType: String) {
-        // Get phone list and send SMS to everyone:
-        applicationScope.launch {
-            val database = PhoneRoomDatabase.getDatabase(this@EndlessService, applicationScope)
-            val listPhones = database.phoneDao().getAllActivePhones()
-
-            // Get date and time:
-            val formatedDate = SimpleDateFormat("dd-MM-yyyy", Locale("pt", "BR")).format(Date())
-            val formatedTime = SimpleDateFormat("HH:mm:ss", Locale("pt", "BR")).format(Date())
-
-            Log.d(TAG, "EndlessService.sendSMS() - $latitude, $longitude, $accuracy, $formatedDate, $formatedTime")
-            appendLog("KD_VC? - EndlessService.sendSMS() - $latitude, $longitude, $accuracy, $formatedDate, $formatedTime", applicationContext)
-
-            val smsManager = SmsManager.getDefault() as SmsManager
-
-            // Send SMS to all phones registered:
-            for(phone in listPhones) {
-                Log.d(TAG, "EndlessService.sendSMS() - for listPhones phoneNumber: ${phone.phoneNumber}")
-                smsManager.sendTextMessage(phone.phoneNumber, null,
-                    "WhereAreYou, $latitude, $longitude, $accuracy, $formatedDate, $formatedTime, " +
-                            "$batteryLevel, $wifiSsId, $hasInternet, $networkType", null, null)
-            }
-        }
     }
 
     private fun sendDataToCloud(latitude: String, longitude: String, accuracy: String, batteryLevel: String,

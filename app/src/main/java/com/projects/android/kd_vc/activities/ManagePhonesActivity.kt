@@ -133,14 +133,14 @@ class ManagePhonesActivity : AppCompatActivity() {
             val builder = AlertDialog.Builder(this@ManagePhonesActivity)
             builder.setMessage("Tem certeza que deseja apagar esse contato?")
                 .setCancelable(false)
-                .setPositiveButton("Sim") { dialog, id ->
+                .setPositiveButton("Sim") { _, _ ->
                     // Delete selected phone from database
                     GlobalScope.async {
                         phoneViewModel.deletePhone(phone)
                         finish()
                     }
                 }
-                .setNegativeButton("Não") { dialog, id ->
+                .setNegativeButton("Não") { dialog, _ ->
                     // Dismiss the dialog
                     dialog.dismiss()
                 }

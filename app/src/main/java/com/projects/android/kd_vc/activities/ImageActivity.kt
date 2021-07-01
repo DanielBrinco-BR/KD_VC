@@ -9,8 +9,8 @@ import android.widget.Button
 import android.widget.ImageView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import com.projects.android.kd_vc.*
-import com.projects.android.kd_vc.room.PhoneRoomDatabase
+import com.projects.android.kd_vc.PhoneApplication
+import com.projects.android.kd_vc.R
 import com.projects.android.kd_vc.room.PhoneViewModel
 import com.projects.android.kd_vc.room.PhoneViewModelFactory
 import kotlinx.coroutines.CoroutineScope
@@ -40,14 +40,6 @@ class ImageActivity : AppCompatActivity() {
         phoneNumber = intent.getStringExtra("phone_number").toString()
 
         contactImageView = findViewById(R.id.contactImageView)
-        val database = PhoneRoomDatabase.getDatabase(this, applicationScope)
-
-        /*
-        GlobalScope.async {
-            val phone = database.phoneDao().findByPhoneNumber(phoneNumber)
-            val uri = phone.imageUri.toUri()
-            contactImageView.setImageURI(uri)
-        } */
 
         buttonGallery = findViewById(R.id.button_gallery)
 
