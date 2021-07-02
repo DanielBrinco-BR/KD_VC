@@ -29,6 +29,7 @@ import com.google.android.gms.auth.api.credentials.*
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.projects.android.kd_vc.*
 import com.projects.android.kd_vc.broadcastreceivers.BroadcastAlarmManger
+import com.projects.android.kd_vc.retrofit.PhoneDataInfo
 import com.projects.android.kd_vc.retrofit.RestApiManager
 import com.projects.android.kd_vc.room.*
 import com.projects.android.kd_vc.services.EndlessService
@@ -57,6 +58,7 @@ class MainActivity : AppCompatActivity() {
         // Variables related to device phone number:
         var CREDENTIAL_PICKER_REQUEST = 1
 
+        // AlarmManager to keep EndlessService always running and to send/receive data to cloud
         fun registerAlarm(context: Context) {
             val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale("pt", "BR"))
             val currentDate = sdf.format(Date())
@@ -77,6 +79,8 @@ class MainActivity : AppCompatActivity() {
             appendLog("$currentDate - companion object ALARM", context)
             Log.i("KadeVc","MainActivity.onCreate() - $currentDate - companion object ALARM")
 
+            // Send data to server (Heroku):
+            sendUpdatesToServer(context)
 
             // Check updates from server (Heroku):
             checkUpdatesFromServer(context)
@@ -102,6 +106,30 @@ class MainActivity : AppCompatActivity() {
             */
         }
 
+        private fun sendUpdatesToServer(context: Context) {
+            val applicationScope = CoroutineScope(SupervisorJob())
+            val database = PhoneRoomDatabase.getDatabase(context, applicationScope)
+
+            applicationScope.launch {
+                try {
+                    val listMyPhoneData = database.phoneDao().getMyPhoneDataList()
+
+                    for (myPhoneData in listMyPhoneData) {
+                        val phoneDataInfo = PhoneDataInfo(
+                            id = null,
+                            number = myPhoneData.number,
+                            data = myPhoneData.data
+                        )
+                        postData(myPhoneData, phoneDataInfo, context)
+                    }
+
+                } catch(e: Exception) {
+                    Log.e("KadeVc", "MainActivity.sendUpdatesFromServer() - POST to Heroku - Exception: ${e.message}")
+                    appendLog("KadeVc - MainActivity.sendUpdatesFromServer() - POST to Heroku - Exception: ${e.message}", context)
+                }
+            }
+        }
+
         fun checkUpdatesFromServer(context: Context) {
             val applicationScope = CoroutineScope(SupervisorJob())
 
@@ -119,6 +147,42 @@ class MainActivity : AppCompatActivity() {
                 } catch(e: Exception) {
                     Log.e("KadeVc", "MainActivity.checkUpdatesFromServer() - GET from Heroku - Exception: ${e.message}")
                     appendLog("KadeVc - MainActivity.checkUpdatesFromServer() - GET from Heroku - Exception: ${e.message}", context)
+                }
+            }
+        }
+
+        private fun postData(myPhoneData: MyPhoneData, phoneDataInfo: PhoneDataInfo, context: Context) {
+            val apiManager = RestApiManager()
+            val applicationScope = CoroutineScope(SupervisorJob())
+
+            apiManager.addPhoneData(phoneDataInfo) {
+                if (it?.id != null) {
+                    // it = newly added user parsed as response
+                    // it?.dataId = newly added phoneData ID
+                    val id = it.id
+                    val number = it.number
+                    val data = Encryption.AESEncyption.decrypt(it.data)
+
+                    val response = "$id \n$number \n$data"
+
+                    // Delete myPhoneData after send to server:
+                    applicationScope.launch {
+                        try {
+                            val database = PhoneRoomDatabase.getDatabase(context, applicationScope)
+                            database.phoneDao().deleteMyPhoneData(myPhoneData)
+                        } catch(e: Exception) {
+                            Log.e("KadeVc", "MainActivity.postData() - Exception: ${e.message}")
+                            appendLog("KadeVc - MainActivity.postData() - Exception: ${e.message}", context)
+                        }
+                    }
+
+
+                    Log.i("KadeVc", "*************************************************************************************************")
+                    Log.i("KadeVc", "EndlessService.postData() - POST Response: \n $response")
+                    appendLog("KdVc - EndlessService.postData - POST Response: \n $response", context)
+                } else {
+                    Log.e("KadeVc", "EndlessService.postData() - Error on POST method;")
+                    appendLog("KdVc - EndlessService.postData - POST Response: Error on POST method", context)
                 }
             }
         }

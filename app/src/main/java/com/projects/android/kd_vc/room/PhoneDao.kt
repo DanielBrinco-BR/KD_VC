@@ -27,6 +27,9 @@ interface PhoneDao {
     @Query("SELECT * FROM phone_table")
     fun getAllActivePhones(): List<Phone>
 
+    @Query("SELECT * FROM my_phone_data")
+    fun getMyPhoneDataList(): List<MyPhoneData>
+
     @Query("SELECT * FROM phone_data WHERE phone_number LIKE :phoneNumber")
     fun getPhoneDataByNumber(phoneNumber: String): LiveData<List<PhoneData>>
 
@@ -63,6 +66,9 @@ interface PhoneDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertNewPhoneData(phoneData: PhoneData)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertNewMyPhoneData(myPhoneData: MyPhoneData)
+
     @Query("UPDATE phone_table SET imageUri = :imageUri WHERE phone_number = :phoneNumber")
     suspend fun updatePhoneImage(imageUri: String, phoneNumber: String)
 
@@ -74,6 +80,9 @@ interface PhoneDao {
 
     @Delete
     fun deletePhone(phone: Phone)
+
+    @Delete
+    fun deleteMyPhoneData(myPhoneData: MyPhoneData)
 
     @Query("DELETE FROM phone_table")
     suspend fun deleteAll()

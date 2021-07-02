@@ -23,10 +23,14 @@ import com.projects.android.kd_vc.R
 import com.projects.android.kd_vc.activities.MainActivity
 import com.projects.android.kd_vc.retrofit.PhoneDataInfo
 import com.projects.android.kd_vc.retrofit.RestApiManager
+import com.projects.android.kd_vc.room.MyPhoneData
+import com.projects.android.kd_vc.room.PhoneRoomDatabase
 import com.projects.android.kd_vc.utils.*
 import com.projects.android.kd_vc.utils.Encryption.AESEncyption.decrypt
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -261,7 +265,7 @@ class EndlessService : Service() {
 
                     if(accuracy <= 20.0) {
                         Log.d(TAG, "EndlessService.getLocationUpdates.locationCallback.onLocationResult() - accuracy <= 20.0 - Call sendDataToCloud()")
-                        sendDataToCloud(location.latitude.toString(), location.longitude.toString(), location.accuracy.toString(), batteryLevel, wifiSsId, hasInternet, networkType)
+                        saveMyPhoneData(location.latitude.toString(), location.longitude.toString(), location.accuracy.toString(), batteryLevel, wifiSsId, hasInternet, networkType)
                     }
                 }
             }
@@ -291,7 +295,7 @@ class EndlessService : Service() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
     }
 
-    private fun sendDataToCloud(latitude: String, longitude: String, accuracy: String, batteryLevel: String,
+    private fun saveMyPhoneData(latitude: String, longitude: String, accuracy: String, batteryLevel: String,
                                 wifiSsId: String, hasInternet: String, networkType: String) {
         // Get date and time:
         val formatedDate = SimpleDateFormat("dd-MM-yyyy", Locale("pt", "BR")).format(Date())
@@ -304,6 +308,17 @@ class EndlessService : Service() {
         if(number != null) {
             Log.i(TAG, "EndlessService.sendDataToCloud() - phone number != null: $number")
             appendLog("KadeVc - EndlessService.sendDataToCloud() - phone number != null: $number", this)
+
+            val encryptedData= Encryption.AESEncyption.encrypt(data)
+            val myPhoneData = MyPhoneData(number, encryptedData)
+            val database = PhoneRoomDatabase.getDatabase(this, applicationScope)
+
+            // Save data on DB to send to cloud
+            GlobalScope.async {
+                database.phoneDao().insertNewMyPhoneData(myPhoneData)
+            }
+
+            /*
             val phoneDataInfo = PhoneDataInfo(
                 id = null,
                 number = number,
@@ -311,14 +326,14 @@ class EndlessService : Service() {
             )
 
             Log.i(TAG, "EndlessService.sendDataToCloud() - encrypted phone number: ${phoneDataInfo.number}")
-            postData(phoneDataInfo)
+            postData(phoneDataInfo) */
         } else {
             Log.i(TAG, "EndlessService.sendDataToCloud() - phone number == null - Check SharedPreferences!!")
             appendLog("KadeVc - EndlessService.sendDataToCloud() - phone number == null - Check SharedPreferences!!", this)
         }
     }
 
-    fun postData(phoneDataInfo: PhoneDataInfo) {
+    private fun postData(phoneDataInfo: PhoneDataInfo) {
         val apiManager = RestApiManager()
 
         apiManager.addPhoneData(phoneDataInfo) {

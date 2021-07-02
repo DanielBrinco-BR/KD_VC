@@ -4,6 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+// Data received from tracked phones
 @Entity(tableName = "phone_data")
 class PhoneData (
     @ColumnInfo(name = "phone_number") val phoneNumber: String,
