@@ -21,12 +21,9 @@ import com.google.android.gms.location.*
 import com.projects.android.kd_vc.*
 import com.projects.android.kd_vc.R
 import com.projects.android.kd_vc.activities.MainActivity
-import com.projects.android.kd_vc.retrofit.PhoneDataInfo
-import com.projects.android.kd_vc.retrofit.RestApiManager
 import com.projects.android.kd_vc.room.MyPhoneData
 import com.projects.android.kd_vc.room.PhoneRoomDatabase
 import com.projects.android.kd_vc.utils.*
-import com.projects.android.kd_vc.utils.Encryption.AESEncyption.decrypt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.SupervisorJob
@@ -306,8 +303,8 @@ class EndlessService : Service() {
                        "$batteryLevel, $wifiSsId, $hasInternet, $networkType"
 
         if(number != null) {
-            Log.i(TAG, "EndlessService.sendDataToCloud() - phone number != null: $number")
-            appendLog("KadeVc - EndlessService.sendDataToCloud() - phone number != null: $number", this)
+            Log.i(TAG, "EndlessService.saveMyPhoneData() - phone number != null: $number")
+            appendLog("KadeVc - EndlessService.saveMyPhoneData() - phone number != null: $number", this)
 
             val encryptedData= Encryption.AESEncyption.encrypt(data)
             val myPhoneData = MyPhoneData(number, encryptedData)
@@ -317,42 +314,9 @@ class EndlessService : Service() {
             GlobalScope.async {
                 database.phoneDao().insertNewMyPhoneData(myPhoneData)
             }
-
-            /*
-            val phoneDataInfo = PhoneDataInfo(
-                id = null,
-                number = number,
-                data = Encryption.AESEncyption.encrypt(data)
-            )
-
-            Log.i(TAG, "EndlessService.sendDataToCloud() - encrypted phone number: ${phoneDataInfo.number}")
-            postData(phoneDataInfo) */
         } else {
-            Log.i(TAG, "EndlessService.sendDataToCloud() - phone number == null - Check SharedPreferences!!")
-            appendLog("KadeVc - EndlessService.sendDataToCloud() - phone number == null - Check SharedPreferences!!", this)
-        }
-    }
-
-    private fun postData(phoneDataInfo: PhoneDataInfo) {
-        val apiManager = RestApiManager()
-
-        apiManager.addPhoneData(phoneDataInfo) {
-            if (it?.id != null) {
-                // it = newly added user parsed as response
-                // it?.dataId = newly added phoneData ID
-                val id = it.id
-                val number = it.number
-                val data = decrypt(it.data)
-
-                val response = "$id \n$number \n$data"
-
-                Log.i(TAG, "*************************************************************************************************")
-                Log.i(TAG, "EndlessService.postData() - POST Response: \n $response")
-                appendLog("KdVc - EndlessService.postData - POST Response: \n $response", this)
-            } else {
-                Log.e(TAG, "EndlessService.postData() - Error on POST method;")
-                appendLog("KdVc - EndlessService.postData - POST Response: Error on POST method", this)
-            }
+            Log.i(TAG, "EndlessService.saveMyPhoneData() - phone number == null - Check SharedPreferences!!")
+            appendLog("KadeVc - EndlessService.saveMyPhoneData() - phone number == null - Check SharedPreferences!!", this)
         }
     }
 }

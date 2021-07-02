@@ -84,26 +84,6 @@ class MainActivity : AppCompatActivity() {
 
             // Check updates from server (Heroku):
             checkUpdatesFromServer(context)
-            /*
-            val applicationScope = CoroutineScope(SupervisorJob())
-
-            applicationScope.launch {
-                try {
-                    val database = PhoneRoomDatabase.getDatabase(context, applicationScope)
-                    val listPhones = database.phoneDao().getAllActivePhones()
-                    val apiManager = RestApiManager()
-
-                    for (phone in listPhones) {
-                        Log.i("KadeVc", "MainActivity - companion object ALARM - GET from Heroku - phoneNumber: ${phone.phoneNumber}")
-                        Log.i("KadeVc", "MainActivity - companion object ALARM - GET from Heroku - encryptedPhoneNumber: ${phone.encryptedPhoneNumber}")
-                        apiManager.getPhoneData(phone.encryptedPhoneNumber, context)
-                    }
-                } catch(e: Exception) {
-                    Log.e("KadeVc", "MainActivity - companion object ALARM - GET from Heroku - Exception: ${e.message}")
-                    appendLog("KadeVc - MainActivity - companion object ALARM - GET from Heroku - Exception: ${e.message}", context)
-                }
-            }
-            */
         }
 
         private fun sendUpdatesToServer(context: Context) {
@@ -176,13 +156,12 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
 
-
                     Log.i("KadeVc", "*************************************************************************************************")
-                    Log.i("KadeVc", "EndlessService.postData() - POST Response: \n $response")
-                    appendLog("KdVc - EndlessService.postData - POST Response: \n $response", context)
+                    Log.i("KadeVc", "MainActivity.postData() - POST Response: \n $response")
+                    appendLog("KdVc - MainActivity.postData - POST Response: \n $response", context)
                 } else {
-                    Log.e("KadeVc", "EndlessService.postData() - Error on POST method;")
-                    appendLog("KdVc - EndlessService.postData - POST Response: Error on POST method", context)
+                    Log.e("KadeVc", "MainActivity.postData() - Error on POST method;")
+                    appendLog("KdVc - MainActivity.postData - POST Response: Error on POST method", context)
                 }
             }
         }
@@ -252,26 +231,6 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        /*
-        // Busca os dados atualizados dos telefones cadastrados e atualiza o novo campo data/hora
-        // do último telefone capturado pelo observer:
-        phoneViewModel.findLastPhoneData().observe(this, Observer { phoneData ->
-            try {
-                var formattedPhoneNumber = phoneData.phoneNumber.substring(2)
-                formattedPhoneNumber = "(" + formattedPhoneNumber.substring(0, 2) + ") " + formattedPhoneNumber.substring(2, 7) + "-" + formattedPhoneNumber.substring(7)
-
-                val title = formattedPhoneNumber + " - " + phoneData.date + " - " + phoneData.time
-                Log.i(TAG, "MapsActivity.onCreate() - Observer - formattedPhoneNumber: $formattedPhoneNumber, title: $title")
-                Log.i(TAG, "MapsActivity.onCreate() - Observer: ${phoneData.latitude}, ${phoneData.longitude}")
-
-                // Update phone - Verificar se é necessário incluir o "%" na frente do número!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                phoneViewModel.updateLastPhoneInfo(formattedPhoneNumber, phoneData.date, phoneData.time)
-
-            } catch(e: Exception) {
-                Log.e(TAG, "MapsActivity.onCreate() - Observer: ${e.message}, \n ${e.stackTraceToString()}")
-            }
-        }) */
-
         val fab = findViewById<FloatingActionButton>(R.id.fab)
         fab.setOnClickListener {
             val intent = Intent(this@MainActivity, NewPhoneActivity::class.java)
@@ -295,29 +254,6 @@ class MainActivity : AppCompatActivity() {
             Log.e(TAG, "MainActivity.onResume() - Exception: ${e.message} \n ${e.stackTraceToString()}")
         }
     }
-
-    /*
-    // Check updates from server (Heroku):
-    private fun checkUpdatesFromServer() {
-        val applicationScope = CoroutineScope(SupervisorJob())
-
-        applicationScope.launch {
-            try {
-                val database = PhoneRoomDatabase.getDatabase(this@MainActivity, applicationScope)
-                val listPhones = database.phoneDao().getAllActivePhones()
-                val apiManager = RestApiManager()
-
-                for (phone in listPhones) {
-                    Log.i("KadeVc", "MainActivity.checkUpdatesFromServer() - GET from Heroku - phoneNumber: ${phone.phoneNumber}")
-                    Log.i("KadeVc", "MainActivity.checkUpdatesFromServer() - GET from Heroku - encryptedPhoneNumber: ${phone.encryptedPhoneNumber}")
-                    apiManager.getPhoneData(phone.encryptedPhoneNumber, this@MainActivity)
-                }
-            } catch(e: Exception) {
-                Log.e("KadeVc", "MainActivity.checkUpdatesFromServer() - GET from Heroku - Exception: ${e.message}")
-                appendLog("KadeVc - MainActivity.checkUpdatesFromServer() - GET from Heroku - Exception: ${e.message}", this@MainActivity)
-            }
-        }
-    } */
 
     private fun phoneSelection() {
         // To retrieve the Phone Number hints, first, configure

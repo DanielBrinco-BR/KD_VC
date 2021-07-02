@@ -9,7 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 // Annotates class to be a Room Database with a table (entity) of the Phone class
-@Database(entities = arrayOf(Phone::class, PhoneData::class), version = 1, exportSchema = false)
+@Database(entities = arrayOf(Phone::class, PhoneData::class, MyPhoneData::class), version = 1, exportSchema = false)
 abstract class PhoneRoomDatabase : RoomDatabase() {
     private val TAG = "KadeVc"
 
