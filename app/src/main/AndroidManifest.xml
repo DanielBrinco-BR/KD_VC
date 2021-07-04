@@ -15,6 +15,8 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.SEND_SMS" />
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -31,11 +33,6 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <receiver
-            android:name=".broadcastreceivers.BroadcastAlarmManger"
-            android:enabled="true"
-            android:exported="true"/>
-
         <!--
              The API key for Google Maps-based APIs is defined as a string resource.
              (See the file "res/values/google_maps_api.xml").
@@ -48,10 +45,16 @@
             android:name="com.google.android.geo.API_KEY"
             android:value="@string/google_maps_key" />
 
-        <activity
-            android:name=".activities.MapsActivity"
-            android:label="@string/title_activity_maps" />
-        <activity android:name=".activities.ManagePhonesActivity" />
+        <receiver
+            android:name=".broadcastreceivers.SmsReceiver"
+            android:enabled="true"
+            android:exported="true"
+            android:permission="android.permission.BROADCAST_SMS">
+            <intent-filter android:priority="999">
+                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".broadcastreceivers.StartReceiver"
             android:enabled="true"
@@ -65,11 +68,20 @@
                 </intent-filter>
             </receiver>
 
+        <receiver
+            android:name=".broadcastreceivers.BroadcastAlarmManger"
+            android:enabled="true"
+            android:exported="true"/>
+
         <service
             android:name=".services.EndlessService"
             android:enabled="true"
             android:exported="false" />
 
+        <activity
+            android:name=".activities.MapsActivity"
+            android:label="@string/title_activity_maps" />
+        <activity android:name=".activities.ManagePhonesActivity" />
         <activity android:name=".activities.ImageActivity" />
         <activity android:name=".activities.NewPhoneActivity" />
         <activity android:name=".activities.MainActivity">

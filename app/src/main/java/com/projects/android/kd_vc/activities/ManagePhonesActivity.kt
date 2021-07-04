@@ -25,10 +25,7 @@ import com.projects.android.kd_vc.utils.Encryption
 import com.projects.android.kd_vc.utils.PhoneNumberFormatType
 import com.projects.android.kd_vc.utils.PhoneNumberFormatter
 import com.projects.android.kd_vc.utils.removeSymbolsFromString
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
+import kotlinx.coroutines.*
 import java.lang.ref.WeakReference
 
 class ManagePhonesActivity : AppCompatActivity() {
@@ -42,7 +39,9 @@ class ManagePhonesActivity : AppCompatActivity() {
     private lateinit var phone: Phone
 
     // No need to cancel this scope as it'll be torn down with the process
-    val applicationScope = CoroutineScope(SupervisorJob())
+    //val applicationScope = CoroutineScope(SupervisorJob())
+    val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
 
     private val phoneViewModel: PhoneViewModel by viewModels {
         PhoneViewModelFactory((application as PhoneApplication).repository)
@@ -134,8 +133,16 @@ class ManagePhonesActivity : AppCompatActivity() {
             builder.setMessage("Tem certeza que deseja apagar esse contato?")
                 .setCancelable(false)
                 .setPositiveButton("Sim") { _, _ ->
+                    /*
                     // Delete selected phone from database
                     GlobalScope.async {
+                        phoneViewModel.deletePhone(phone)
+                        finish()
+                    }
+                    */
+
+                    // Delete selected phone from database
+                    applicationScope.launch {
                         phoneViewModel.deletePhone(phone)
                         finish()
                     }

@@ -13,6 +13,7 @@ import android.os.IBinder
 import android.os.PowerManager
 import android.os.SystemClock
 import android.provider.Settings
+import android.telephony.SmsManager
 import android.telephony.TelephonyManager
 import android.util.Log
 import android.widget.Toast
@@ -24,10 +25,7 @@ import com.projects.android.kd_vc.activities.MainActivity
 import com.projects.android.kd_vc.room.MyPhoneData
 import com.projects.android.kd_vc.room.PhoneRoomDatabase
 import com.projects.android.kd_vc.utils.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
+import kotlinx.coroutines.*
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -41,7 +39,8 @@ class EndlessService : Service() {
     private var isServiceStarted = false
 
     // No need to cancel this scope as it'll be torn down with the process
-    val applicationScope = CoroutineScope(SupervisorJob())
+    //val applicationScope = CoroutineScope(SupervisorJob())
+    val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override fun onBind(intent: Intent): IBinder? {
         Log.d(TAG,"EndlessService.onBind() - Some component want to bind with the service")
@@ -260,9 +259,16 @@ class EndlessService : Service() {
                     Log.d(TAG, "EndlessService.getLocationUpdates().locationCallback.onLocationResult() - $latitude, $longitude, $accuracy, Extras: $batteryLevel, $wifiSsId, $hasInternet, $networkType")
                     appendLog("KD_VC? - EndlessService.getLocationUpdates().locationCallback.onLocationResult() - $latitude, $longitude, $accuracy, Extras: $batteryLevel, $wifiSsId, $hasInternet, $networkType", applicationContext)
 
-                    if(accuracy <= 20.0) {
-                        Log.d(TAG, "EndlessService.getLocationUpdates.locationCallback.onLocationResult() - accuracy <= 20.0 - Call sendDataToCloud()")
+                    if(accuracy <= 15.0) {
+                        Log.d(TAG, "EndlessService.getLocationUpdates.locationCallback.onLocationResult() - accuracy <= 15.0 - Call saveMyPhoneData() and/or sendSMS()")
                         saveMyPhoneData(location.latitude.toString(), location.longitude.toString(), location.accuracy.toString(), batteryLevel, wifiSsId, hasInternet, networkType)
+
+                        // Check if SMS send mode is active:
+                        val smsState = getSmsState(this@EndlessService)
+                        if(smsState == SmsState.ACTIVATED) {
+                            Log.d(TAG, "EndlessService.getLocationUpdates.locationCallback.onLocationResult() - SmsState = $smsState - Call sendSMS()")
+                            sendSMS(location.latitude.toString(), location.longitude.toString(), location.accuracy.toString(), batteryLevel, wifiSsId, hasInternet, networkType)
+                        }
                     }
                 }
             }
@@ -310,13 +316,46 @@ class EndlessService : Service() {
             val myPhoneData = MyPhoneData(number, encryptedData)
             val database = PhoneRoomDatabase.getDatabase(this, applicationScope)
 
+            /*
             // Save data on DB to send to cloud
             GlobalScope.async {
                 database.phoneDao().insertNewMyPhoneData(myPhoneData)
             }
+            */
+
+            applicationScope.launch {
+                database.phoneDao().insertNewMyPhoneData(myPhoneData)
+            }
+
         } else {
             Log.i(TAG, "EndlessService.saveMyPhoneData() - phone number == null - Check SharedPreferences!!")
             appendLog("KadeVc - EndlessService.saveMyPhoneData() - phone number == null - Check SharedPreferences!!", this)
+        }
+    }
+
+    fun sendSMS(latitude: String, longitude: String, accuracy: String, batteryLevel: String,
+                wifiSsId: String, hasInternet: String, networkType: String) {
+        // Get phone list and send SMS to everyone:
+        applicationScope.launch {
+            val database = PhoneRoomDatabase.getDatabase(this@EndlessService, applicationScope)
+            val listPhones = database.phoneDao().getAllActivePhones()
+
+            // Get date and time:
+            val formatedDate = SimpleDateFormat("dd-MM-yyyy", Locale("pt", "BR")).format(Date())
+            val formatedTime = SimpleDateFormat("HH:mm:ss", Locale("pt", "BR")).format(Date())
+
+            Log.d(TAG, "EndlessService.sendSMS() - $latitude, $longitude, $accuracy, $formatedDate, $formatedTime")
+            appendLog("KD_VC? - EndlessService.sendSMS() - $latitude, $longitude, $accuracy, $formatedDate, $formatedTime", applicationContext)
+
+            val smsManager = SmsManager.getDefault() as SmsManager
+
+            // Send SMS to all phones registered:
+            for(phone in listPhones) {
+                Log.d(TAG, "EndlessService.sendSMS() - for listPhones phoneNumber: ${phone.phoneNumber}")
+                smsManager.sendTextMessage(phone.phoneNumber, null,
+                    "WhereAreYou, $latitude, $longitude, $accuracy, $formatedDate, $formatedTime, " +
+                            "$batteryLevel, $wifiSsId, $hasInternet, $networkType", null, null)
+            }
         }
     }
 }

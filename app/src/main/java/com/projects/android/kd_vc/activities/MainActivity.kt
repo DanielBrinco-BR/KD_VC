@@ -36,6 +36,7 @@ import com.projects.android.kd_vc.services.EndlessService
 import com.projects.android.kd_vc.utils.*
 import com.projects.android.kd_vc.utils.Encryption.AESEncyption.encrypt
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -87,7 +88,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         private fun sendUpdatesToServer(context: Context) {
-            val applicationScope = CoroutineScope(SupervisorJob())
+            //val applicationScope = CoroutineScope(SupervisorJob())
+            val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
             val database = PhoneRoomDatabase.getDatabase(context, applicationScope)
 
             applicationScope.launch {
@@ -111,7 +113,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         fun checkUpdatesFromServer(context: Context) {
-            val applicationScope = CoroutineScope(SupervisorJob())
+            //val applicationScope = CoroutineScope(SupervisorJob())
+            val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
             applicationScope.launch {
                 try {
@@ -335,13 +338,24 @@ class MainActivity : AppCompatActivity() {
         inflater.inflate(R.menu.menu_options, menu)
         this.menu = menu as Menu
 
-        // Configura o ícone do botão de ativar/desativar o rastreador:
-        if(getServiceState(applicationContext) == ServiceState.STOPPED) {
+        // Configura o ícone do botão de ativar/desativar o envio da localização por SMS:
+        if(getSmsState(applicationContext) == SmsState.DEACTIVATED) {
             this.menu.getItem(0).setIcon(ContextCompat.getDrawable(this,
-                R.drawable.ic_baseline_location_off_24
+                R.drawable.sms_off_foreground
             ));
         } else {
             this.menu.getItem(0).setIcon(ContextCompat.getDrawable(this,
+                R.drawable.sms_on_foreground
+            ));
+        }
+
+        // Configura o ícone do botão de ativar/desativar o rastreador:
+        if(getServiceState(applicationContext) == ServiceState.STOPPED) {
+            this.menu.getItem(1).setIcon(ContextCompat.getDrawable(this,
+                R.drawable.ic_baseline_location_off_24
+            ));
+        } else {
+            this.menu.getItem(1).setIcon(ContextCompat.getDrawable(this,
                 R.drawable.ic_baseline_location_on_24
             ));
         }
@@ -351,19 +365,39 @@ class MainActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         // Handle item selection
         return when (item.itemId) {
+            R.id.sms -> {
+                if(getSmsState(applicationContext) == SmsState.DEACTIVATED) {
+                    val title = "Rastreamento por SMS"
+                    val message = "Deseja ativar o rastreamento por SMS?"
+                    showAlertDialog(title, message, Actions.ACTIVATE_SMS)
+                    menu.getItem(0).setIcon(ContextCompat.getDrawable(this,
+                        R.drawable.sms_on_foreground
+                    ));
+                } else {
+                    val title = "Rastreamento por SMS"
+                    val message = "Deseja desativar o rastreamento por SMS?"
+                    showAlertDialog(title, message, Actions.DEACTIVATE_SMS)
+                    menu.getItem(0).setIcon(ContextCompat.getDrawable(this,
+                        R.drawable.sms_off_foreground
+                    ));
+                }
+                true
+            }
             R.id.stop_start -> {
                 if(getServiceState(applicationContext) == ServiceState.STOPPED) {
                     //actionOnService(Actions.START)
-                    var message = "Deseja ativar o rastreador?"
-                    showAlertDialog(message, Actions.START)
-                    menu.getItem(0).setIcon(ContextCompat.getDrawable(this,
+                    val title = "Rastreador GPS"
+                    val message = "Deseja ativar o rastreador?"
+                    showAlertDialog(title, message, Actions.START)
+                    menu.getItem(1).setIcon(ContextCompat.getDrawable(this,
                         R.drawable.ic_baseline_location_on_24
                     ));
                 } else {
                     //actionOnService(Actions.STOP)
-                    var message = "Deseja desativar o rastreador?"
-                    showAlertDialog(message, Actions.STOP)
-                    menu.getItem(0).setIcon(ContextCompat.getDrawable(this,
+                    val title = "Rastreador GPS"
+                    val message = "Deseja desativar o rastreador?"
+                    showAlertDialog(title, message, Actions.STOP)
+                    menu.getItem(1).setIcon(ContextCompat.getDrawable(this,
                         R.drawable.ic_baseline_location_off_24
                     ));
                 }
@@ -424,14 +458,21 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showAlertDialog(message: String, action: Actions) {
+    private fun showAlertDialog(title: String, message: String, action: Actions) {
         val builder = AlertDialog.Builder(this)
-        builder.setTitle("Rastreador GPS")
+        builder.setTitle(title)
         builder.setMessage(message)
 
         builder.setPositiveButton("Sim") { _, _ ->
             Log.i(TAG, "MainActivity.showDialog() - Start Button: Sim")
-            actionOnService(action)
+
+            if(action == Actions.ACTIVATE_SMS) {
+                setSmsState(this, SmsState.ACTIVATED)
+            } else if(action == Actions.DEACTIVATE_SMS) {
+                setSmsState(this, SmsState.DEACTIVATED)
+            } else {
+                actionOnService(action)
+            }
         }
 
         builder.setNeutralButton("Sair") { _, _ ->

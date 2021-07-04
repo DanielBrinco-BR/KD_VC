@@ -7,9 +7,9 @@ import com.projects.android.kd_vc.room.PhoneRoomDatabase
 import com.projects.android.kd_vc.utils.Encryption.AESEncyption.decrypt
 import com.projects.android.kd_vc.utils.appendLog
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -21,7 +21,8 @@ class RestApiManager {
     private val TAG = "KadeVc"
 
     // No need to cancel this scope as it'll be torn down with the process
-    val applicationScope = CoroutineScope(SupervisorJob())
+    //val applicationScope = CoroutineScope(SupervisorJob())
+    val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     fun addPhoneData(phoneData: PhoneDataInfo, onResult: (PhoneDataInfo?) -> Unit){
         val retrofit = ServiceBuilder.buildService(RestApi::class.java)
@@ -77,7 +78,22 @@ class RestApiManager {
                     val hasInternet = dataArray[7]
                     val networkType = dataArray[8]
 
+                    /*
                     GlobalScope.async {
+                        val phone = database.phoneDao().findByEncryptedPhoneNumber(dataInfo.number)
+
+                        Log.i(TAG, "RestApiManager.getPhoneData() - Callback onResponse: ${phone.phoneNumber}, $latitude, $longitude, $accuracy, $date, $time, $batteryLevel," +
+                                "$wifiSSID, $hasInternet, $networkType")
+                        appendLog("KdVc - RestApiManager.getPhoneData() - Callback onResponse: ${phone.phoneNumber}, $latitude, $longitude, $accuracy, $date, $time, " +
+                                "$batteryLevel, $wifiSSID, $hasInternet, $networkType", context)
+
+                        val phoneData = PhoneData(phone.phoneNumber, latitude, longitude, accuracy, date,
+                            time, batteryLevel, wifiSSID, hasInternet, networkType)
+                        database.phoneDao().insertNewPhoneData(phoneData)
+                    }
+                    */
+
+                    applicationScope.launch {
                         val phone = database.phoneDao().findByEncryptedPhoneNumber(dataInfo.number)
 
                         Log.i(TAG, "RestApiManager.getPhoneData() - Callback onResponse: ${phone.phoneNumber}, $latitude, $longitude, $accuracy, $date, $time, $batteryLevel," +

@@ -2,6 +2,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
+        android:id="@+id/sms"
+        android:gravity="center_horizontal"
+        app:showAsAction="ifRoom"
+        android:title="@string/sms_status" />
+    <item
         android:id="@+id/stop_start"
         android:gravity="center_horizontal"
         app:showAsAction="ifRoom"

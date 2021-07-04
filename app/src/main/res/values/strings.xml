@@ -31,4 +31,5 @@
     <string name="busca_por_data">Busca por Data</string>
     <string name="spinner">Filtrar por Data</string>
     <string name="search_by_data">Pesquisar por Data</string>
+    <string name="sms_status">Ativar SMS</string>
 </resources>
