@@ -3,6 +3,10 @@
 O "KdVc" é um protótipo de aplicativo rastreador de celulares Android, coleta dados de localização e envia para uma API REST na "nuvem", também recebe dados de outros celulares que possuirem o mesmo aplicativo instalado
 e que tenham os números a serem rastreados devidamente cadastrados. Por segurança os dados enviados são criptografados pelo aplicativo e permanecem na "nuvem" somente até o celular monitor realizar a coleta dos mesmos. 
 
+Arquitetura do aplicativo:
+
+![alt text](https://github.com/DanielBrinco-BR/KD_VC/blob/main/Android_KdVc_Diagram.png?raw=true)
+
 É recomendado testar o aplicativo cadastrando o próprio número e observar como o rastreamento é feito.
 
 Após instalar o aplicativo em um celular Android execute as etapas abaixo:
