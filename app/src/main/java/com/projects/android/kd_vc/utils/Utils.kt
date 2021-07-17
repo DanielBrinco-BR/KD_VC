@@ -4,6 +4,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.location.LocationManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.wifi.SupplicantState
@@ -91,6 +92,13 @@ fun isNetworkAvailable(context: Context?): Boolean {
         }
     }
     return false
+}
+
+fun isLocationEnabled(context: Context): Boolean {
+    val locationManager: LocationManager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+    // return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) || locationManager.isProviderEnabled(
+    // LocationManager.NETWORK_PROVIDER)
 }
 
 /** Usage: `networkTypeClass(telephonyManager.networkType)` */

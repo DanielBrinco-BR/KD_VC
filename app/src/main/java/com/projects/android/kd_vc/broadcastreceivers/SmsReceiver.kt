@@ -7,8 +7,8 @@ import android.os.Build
 import android.telephony.SmsMessage
 import android.util.Log
 import androidx.annotation.RequiresApi
+import com.projects.android.kd_vc.PhoneApplication
 import com.projects.android.kd_vc.room.PhoneData
-import com.projects.android.kd_vc.room.PhoneRoomDatabase
 import com.projects.android.kd_vc.utils.appendLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -17,8 +17,6 @@ import kotlinx.coroutines.launch
 
 
 class SmsReceiver : BroadcastReceiver() {
-    // No need to cancel this scope as it'll be torn down with the process
-    //val applicationScope = CoroutineScope(SupervisorJob())
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     val pdu_type = "pdus"
@@ -28,6 +26,9 @@ class SmsReceiver : BroadcastReceiver() {
     @RequiresApi(Build.VERSION_CODES.M)
     override fun onReceive(context: Context, intent: Intent) {
         Log.d(TAG, "SmsReceiver.onReceive()")
+
+        val phoneApplication = PhoneApplication()
+
         // Get the SMS message.
         val bundle = intent.extras
         val msgs: Array<SmsMessage?>
@@ -61,7 +62,6 @@ class SmsReceiver : BroadcastReceiver() {
                     if(strMessage.startsWith("WhereAreYou") || strMessage.startsWith("TrackerTest")) {
                         Log.d(TAG, "SmsReceiver.onReceive() - abortBroadcast()")
                         this.abortBroadcast()
-                        //appendLog("WhereAreYou - SmsReceiver.onReceive() - abortBroadcast() - Message: $strMessage - Origin: $strOrigin", context)
 
                         Log.d(TAG, "SmsReceiver.onReceive() -> Message: $strMessage, Origin: $strOrigin")
                         appendLog("SmsReceiver.onReceive() -> Message: $strMessage, Origin: $strOrigin", context)
@@ -85,7 +85,7 @@ class SmsReceiver : BroadcastReceiver() {
                             hasInternet = smsContent[8]
                             networkType = smsContent[9]
                         } catch(e: Exception) {
-                            //Log.e(TAG, "SmsReceiver.onReceive() - Exception: ${e.message} \n ${e.stackTraceToString()}")
+                            Log.e(TAG, "SmsReceiver.onReceive() - Exception: ${e.message} \n ${e.stackTraceToString()}")
                         }
 
                         Log.d(TAG, "SmsReceiver.onReceive() - $strOrigin, $lat, $long, $accuracy, $date, $time, $batteryLevel, $wifiSSID, $hasInternet, $networkType")
@@ -94,31 +94,16 @@ class SmsReceiver : BroadcastReceiver() {
                         // Saving in Database:
                         val data = PhoneData(strOrigin, lat, long, accuracy, date, time, batteryLevel, wifiSSID, hasInternet, networkType)
 
-                        // Criando DB para salvar os dados:
-                        val database = PhoneRoomDatabase.getDatabase(context, applicationScope)
-
-                        /*
-                        GlobalScope.async {
-                            database.phoneDao().insertNewPhoneData(data)
-                        }
-                        */
-
                         applicationScope.launch {
-                            database.phoneDao().insertNewPhoneData(data)
+                            phoneApplication.repository.insertNewPhoneData(data)
                         }
 
                         Log.d(TAG, "SmsReceiver.onReceive() - smsContent: $lat, $long, $date, $time")
-                        //appendLog("WhereAreYou - SmsReceiver.onReceive() - smsContent: $lat, $long, $date, $time", context)
                     }
                 } catch (e: Exception) {
                     Log.d(TAG, "SmsReceiver.onReceive() - Exception: \n ${e.printStackTrace()}")
                 }
 
-                // Build the message to show.
-                //strMessage += "SMS from " + msgs[i]?.getOriginatingAddress()
-                //strMessage += " :" + {msgs[i]?.getMessageBody().toString() + "\n"}
-
-                // Log and display the SMS message.
                 Log.d(TAG, "SmsReceiver.onReceive(): $strMessage - $strOrigin")
                 appendLog("KD_VC? - SmsReceiver.onReceive(): $strMessage, $strOrigin", context)
             }

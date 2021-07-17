@@ -20,22 +20,26 @@ class BroadcastAlarmManger : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", Locale("pt", "BR"))
         val currentDate = sdf.format(Date())
-        appendLog("$currentDate - BroadcastAlarmManager.onReceive()", context)
+        appendLog("$currentDate - BroadcastAlarmManager.onReceive()*******************************", context)
         MainActivity.registerAlarm(context)
 
-        // Usando o EndlessService com Fused Location Provider
-        if (getServiceState(context.applicationContext) == ServiceState.STOPPED) {
-            Intent(context.applicationContext, EndlessService::class.java).also {
-                it.action = Actions.START.name
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    Log.d(TAG,"RestartService.doWork() - Starting the service in >=26 Mode - Date: $currentDate")
-                    appendLog("KadeVc - RestartService.doWork() - Starting the service in >=26 Mode - Date: $currentDate", context.applicationContext)
-                    context.applicationContext.startForegroundService(it)
-                } else {
-                    Log.d(TAG, "RestartService.doWork() - Starting the service in < 26 Mode - Date: $currentDate")
-                    appendLog("KadeVc - RestartService.doWork() - Starting the service in < 26 Mode - Date: $currentDate", context.applicationContext)
-                    context.applicationContext.startService(it)
-                }
+        // Check if tracker is enabled:
+        if(getServiceState(context.applicationContext) == ServiceState.STOPPED) {
+            Log.i(TAG, "BroadcastAlarmManager.onReceive() - getServiceState == ServiceState.STOPPED -> return")
+            appendLog("$currentDate - BroadcastAlarmManager.onReceive() - getServiceState == ServiceState.STOPPED -> return", context)
+            return
+        }
+
+        Intent(context.applicationContext, EndlessService::class.java).also {
+            it.action = Actions.START.name
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Log.d(TAG,"RestartService.doWork() - Starting the service in >=26 Mode - Date: $currentDate")
+                appendLog("KadeVc - RestartService.doWork() - Starting the service in >=26 Mode - Date: $currentDate", context.applicationContext)
+                context.applicationContext.startForegroundService(it)
+            } else {
+                Log.d(TAG, "RestartService.doWork() - Starting the service in < 26 Mode - Date: $currentDate")
+                appendLog("KadeVc - RestartService.doWork() - Starting the service in < 26 Mode - Date: $currentDate", context.applicationContext)
+                context.applicationContext.startService(it)
             }
         }
     }

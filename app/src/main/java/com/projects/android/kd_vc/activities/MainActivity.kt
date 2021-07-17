@@ -3,19 +3,16 @@ package com.projects.android.kd_vc.activities
 import android.Manifest
 import android.app.Activity
 import android.app.AlarmManager
-import android.app.DatePickerDialog
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
 import android.content.pm.PackageManager
-import android.location.LocationManager
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
-import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
@@ -29,16 +26,10 @@ import com.google.android.gms.auth.api.credentials.*
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.projects.android.kd_vc.*
 import com.projects.android.kd_vc.broadcastreceivers.BroadcastAlarmManger
-import com.projects.android.kd_vc.retrofit.PhoneDataInfo
-import com.projects.android.kd_vc.retrofit.RestApiManager
 import com.projects.android.kd_vc.room.*
 import com.projects.android.kd_vc.services.EndlessService
 import com.projects.android.kd_vc.utils.*
 import com.projects.android.kd_vc.utils.Encryption.AESEncyption.encrypt
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -58,6 +49,8 @@ class MainActivity : AppCompatActivity() {
     companion object {
         // Variables related to device phone number:
         var CREDENTIAL_PICKER_REQUEST = 1
+
+        val phoneApplication = PhoneApplication()
 
         // AlarmManager to keep EndlessService always running and to send/receive data to cloud
         fun registerAlarm(context: Context) {
@@ -80,93 +73,8 @@ class MainActivity : AppCompatActivity() {
             appendLog("$currentDate - companion object ALARM", context)
             Log.i("KadeVc","MainActivity.onCreate() - $currentDate - companion object ALARM")
 
-            // Send data to server (Heroku):
-            sendUpdatesToServer(context)
-
-            // Check updates from server (Heroku):
-            checkUpdatesFromServer(context)
-        }
-
-        private fun sendUpdatesToServer(context: Context) {
-            //val applicationScope = CoroutineScope(SupervisorJob())
-            val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-            val database = PhoneRoomDatabase.getDatabase(context, applicationScope)
-
-            applicationScope.launch {
-                try {
-                    val listMyPhoneData = database.phoneDao().getMyPhoneDataList()
-
-                    for (myPhoneData in listMyPhoneData) {
-                        val phoneDataInfo = PhoneDataInfo(
-                            id = null,
-                            number = myPhoneData.number,
-                            data = myPhoneData.data
-                        )
-                        postData(myPhoneData, phoneDataInfo, context)
-                    }
-
-                } catch(e: Exception) {
-                    Log.e("KadeVc", "MainActivity.sendUpdatesFromServer() - POST to Heroku - Exception: ${e.message}")
-                    appendLog("KadeVc - MainActivity.sendUpdatesFromServer() - POST to Heroku - Exception: ${e.message}", context)
-                }
-            }
-        }
-
-        fun checkUpdatesFromServer(context: Context) {
-            //val applicationScope = CoroutineScope(SupervisorJob())
-            val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
-            applicationScope.launch {
-                try {
-                    val database = PhoneRoomDatabase.getDatabase(context, applicationScope)
-                    val listPhones = database.phoneDao().getAllActivePhones()
-                    val apiManager = RestApiManager()
-
-                    for (phone in listPhones) {
-                        Log.i("KadeVc", "MainActivity.checkUpdatesFromServer() - GET from Heroku - phoneNumber: ${phone.phoneNumber}")
-                        Log.i("KadeVc", "MainActivity.checkUpdatesFromServer() - GET from Heroku - encryptedPhoneNumber: ${phone.encryptedPhoneNumber}")
-                        apiManager.getPhoneData(phone.encryptedPhoneNumber, context)
-                    }
-                } catch(e: Exception) {
-                    Log.e("KadeVc", "MainActivity.checkUpdatesFromServer() - GET from Heroku - Exception: ${e.message}")
-                    appendLog("KadeVc - MainActivity.checkUpdatesFromServer() - GET from Heroku - Exception: ${e.message}", context)
-                }
-            }
-        }
-
-        private fun postData(myPhoneData: MyPhoneData, phoneDataInfo: PhoneDataInfo, context: Context) {
-            val apiManager = RestApiManager()
-            val applicationScope = CoroutineScope(SupervisorJob())
-
-            apiManager.addPhoneData(phoneDataInfo) {
-                if (it?.id != null) {
-                    // it = newly added user parsed as response
-                    // it?.dataId = newly added phoneData ID
-                    val id = it.id
-                    val number = it.number
-                    val data = Encryption.AESEncyption.decrypt(it.data)
-
-                    val response = "$id \n$number \n$data"
-
-                    // Delete myPhoneData after send to server:
-                    applicationScope.launch {
-                        try {
-                            val database = PhoneRoomDatabase.getDatabase(context, applicationScope)
-                            database.phoneDao().deleteMyPhoneData(myPhoneData)
-                        } catch(e: Exception) {
-                            Log.e("KadeVc", "MainActivity.postData() - Exception: ${e.message}")
-                            appendLog("KadeVc - MainActivity.postData() - Exception: ${e.message}", context)
-                        }
-                    }
-
-                    Log.i("KadeVc", "*************************************************************************************************")
-                    Log.i("KadeVc", "MainActivity.postData() - POST Response: \n $response")
-                    appendLog("KdVc - MainActivity.postData - POST Response: \n $response", context)
-                } else {
-                    Log.e("KadeVc", "MainActivity.postData() - Error on POST method;")
-                    appendLog("KdVc - MainActivity.postData - POST Response: Error on POST method", context)
-                }
-            }
+            phoneApplication.repository.sendUpdatesToServer(context)
+            phoneApplication.repository.checkUpdatesFromServer(context)
         }
     }
 
@@ -200,9 +108,6 @@ class MainActivity : AppCompatActivity() {
             Log.e(TAG, "$e.message")
         }
 
-        // Add an observer on the LiveData returned by getAlphabetizedPhones.
-        // The onChanged() method fires when the observed data changes and the activity is
-        // in the foreground.
         phoneViewModel.allPhones.observe(this, Observer { phones ->
 
             for(phone in phones) {
@@ -226,9 +131,7 @@ class MainActivity : AppCompatActivity() {
                 Log.i(TAG, "MainActivity.onCreate() - Observer - formattedPhoneNumber: $formattedPhoneNumber, title: $title")
                 Log.i(TAG, "MainActivity.onCreate() - Observer: ${phoneData.phoneNumber}, ${phoneData.latitude}, ${phoneData.longitude}")
 
-                // Update phone - Verificar se é necessário incluir o "%" na frente do número!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 phoneViewModel.updateLastPhoneInfo(phoneData.phoneNumber, phoneData.date, phoneData.time)
-
             } catch(e: Exception) {
                 Log.e(TAG, "MapsActivity.onCreate() - Observer: ${e.message}, \n ${e.stackTraceToString()}")
             }
@@ -251,7 +154,8 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         Log.i("KadeVc","MainActivity.onResume()")
         try {
-            checkUpdatesFromServer(this)
+            //checkUpdatesFromServer(this)
+            phoneApplication.repository.checkUpdatesFromServer(this)
             adapter.notifyDataSetChanged()
         } catch(e: Exception) {
             Log.e(TAG, "MainActivity.onResume() - Exception: ${e.message} \n ${e.stackTraceToString()}")
@@ -259,8 +163,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun phoneSelection() {
-        // To retrieve the Phone Number hints, first, configure
-        // the hint selector dialog by creating a HintRequest object.
         val hintRequest = HintRequest.Builder()
             .setPhoneNumberIdentifierSupported(true)
             .build()
@@ -269,10 +171,6 @@ class MainActivity : AppCompatActivity() {
             .forceEnableSaveDialog()
             .build()
 
-        // Then, pass the HintRequest object to
-        // credentialsClient.getHintPickerIntent()
-        // to get an intent to prompt the user to
-        // choose a phone number.
         val credentialsClient = Credentials.getClient(applicationContext, options)
         val intent = credentialsClient.getHintPickerIntent(hintRequest)
 
@@ -370,36 +268,22 @@ class MainActivity : AppCompatActivity() {
                     val title = "Rastreamento por SMS"
                     val message = "Deseja ativar o rastreamento por SMS?"
                     showAlertDialog(title, message, Actions.ACTIVATE_SMS)
-                    menu.getItem(0).setIcon(ContextCompat.getDrawable(this,
-                        R.drawable.sms_on_foreground
-                    ));
                 } else {
                     val title = "Rastreamento por SMS"
                     val message = "Deseja desativar o rastreamento por SMS?"
                     showAlertDialog(title, message, Actions.DEACTIVATE_SMS)
-                    menu.getItem(0).setIcon(ContextCompat.getDrawable(this,
-                        R.drawable.sms_off_foreground
-                    ));
                 }
                 true
             }
             R.id.stop_start -> {
                 if(getServiceState(applicationContext) == ServiceState.STOPPED) {
-                    //actionOnService(Actions.START)
                     val title = "Rastreador GPS"
                     val message = "Deseja ativar o rastreador?"
                     showAlertDialog(title, message, Actions.START)
-                    menu.getItem(1).setIcon(ContextCompat.getDrawable(this,
-                        R.drawable.ic_baseline_location_on_24
-                    ));
                 } else {
-                    //actionOnService(Actions.STOP)
                     val title = "Rastreador GPS"
                     val message = "Deseja desativar o rastreador?"
                     showAlertDialog(title, message, Actions.STOP)
-                    menu.getItem(1).setIcon(ContextCompat.getDrawable(this,
-                        R.drawable.ic_baseline_location_off_24
-                    ));
                 }
                 true
             }
@@ -421,40 +305,29 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setDatePicker(dateEditText: EditText) {
-        val myCalendar = Calendar.getInstance()
-
-        val datePickerOnDataSetListener = DatePickerDialog.OnDateSetListener { _, year, monthOfYear, dayOfMonth ->
-            myCalendar.set(Calendar.YEAR, year)
-            myCalendar.set(Calendar.MONTH, monthOfYear)
-            myCalendar.set(Calendar.DAY_OF_MONTH, dayOfMonth)
-            updateLabel(myCalendar, dateEditText)
-        }
-
-        dateEditText.setOnClickListener {
-            DatePickerDialog(this, datePickerOnDataSetListener, myCalendar
-                .get(Calendar.YEAR), myCalendar.get(Calendar.MONTH),
-                myCalendar.get(Calendar.DAY_OF_MONTH)).show()
-        }
-    }
-
-    private fun updateLabel(myCalendar: Calendar, dateEditText: EditText) {
-        val myFormat: String = "dd-MMM-yyyy"
-        val sdf = SimpleDateFormat(myFormat, Locale.UK)
-        dateEditText.setText(sdf.format(myCalendar.time))
-    }
-
     private fun actionOnService(action: Actions) {
         if (getServiceState(this) == ServiceState.STOPPED && action == Actions.STOP) return
-        Intent(this, EndlessService::class.java).also {
-            it.action = action.name
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                Log.d(TAG,"MainActivity.actionOnService() - Starting the service in >=26 Mode")
-                startForegroundService(it)
-                return
+
+        if(action == Actions.START) {
+            setServiceState(this, ServiceState.STARTED)
+            this.menu.getItem(1).setIcon(ContextCompat.getDrawable(this,
+                R.drawable.ic_baseline_location_on_24))
+
+            // Start service without wait alarmmanager:
+            Intent(this, EndlessService::class.java).also {
+                it.action = action.name
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    Log.d(TAG,"MainActivity.actionOnService() - Starting the service in >=26 Mode")
+                    startForegroundService(it)
+                    return
+                }
+                Log.d(TAG,"MainActivity.actionOnService() - Starting the service in < 26 Mode")
+                startService(it)
             }
-            Log.d(TAG,"MainActivity.actionOnService() - Starting the service in < 26 Mode")
-            startService(it)
+        } else {
+            setServiceState(this, ServiceState.STOPPED)
+            this.menu.getItem(1).setIcon(ContextCompat.getDrawable(this,
+                R.drawable.ic_baseline_location_off_24))
         }
     }
 
@@ -468,8 +341,12 @@ class MainActivity : AppCompatActivity() {
 
             if(action == Actions.ACTIVATE_SMS) {
                 setSmsState(this, SmsState.ACTIVATED)
+                this.menu.getItem(0).setIcon(ContextCompat.getDrawable(this,
+                    R.drawable.sms_on_foreground))
             } else if(action == Actions.DEACTIVATE_SMS) {
                 setSmsState(this, SmsState.DEACTIVATED)
+                this.menu.getItem(0).setIcon(ContextCompat.getDrawable(this,
+                    R.drawable.sms_off_foreground))
             } else {
                 actionOnService(action)
             }
@@ -493,7 +370,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkPermissions(): Boolean {
-        //Log.d("WhereAreYou", "MainActivity.checkPermissions()")
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
             ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED &&
             ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_BACKGROUND_LOCATION) == PackageManager.PERMISSION_GRANTED &&
@@ -509,22 +385,14 @@ class MainActivity : AppCompatActivity() {
             ActivityCompat.checkSelfPermission(this, Manifest.permission.CHANGE_WIFI_STATE) == PackageManager.PERMISSION_GRANTED &&
             ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED &&
             ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_NETWORK_STATE) == PackageManager.PERMISSION_GRANTED &&
+            ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED &&
             ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
             return true
         }
         return false
     }
 
-    private fun isLocationEnabled(): Boolean {
-        //Log.d(TAG, "MainActivity.isLocationEnabled()")
-        val locationManager: LocationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-        // return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) || locationManager.isProviderEnabled(
-            // LocationManager.NETWORK_PROVIDER)
-    }
-
     private fun requestPermissions() {
-        //Log.d("WhereAreYou", "MainActivity.requestPermissions()")
         ActivityCompat.requestPermissions(this,
             arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION,
                 Manifest.permission.ACCESS_FINE_LOCATION,
@@ -541,6 +409,7 @@ class MainActivity : AppCompatActivity() {
                 Manifest.permission.CHANGE_WIFI_STATE,
                 Manifest.permission.READ_PHONE_STATE,
                 Manifest.permission.ACCESS_NETWORK_STATE,
+                Manifest.permission.READ_EXTERNAL_STORAGE,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE),
             PERMISSION_ID
         )
@@ -548,16 +417,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        //Log.d("WhereAreYou", "MapsActivity.onRequestPermissionsResult()")
         if (requestCode == PERMISSION_ID) {
             if ((grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)) {
                 // Inicia o Rastreador de imediato:
                 //actionOnService(Actions.START)
             } else {
                 val sb: StringBuilder = java.lang.StringBuilder()
-                sb.appendLine("O App KD_VC precisa das permissões de Localização e SMS para funcionar!\n")
+                sb.appendLine("O App KdVc precisa das permissões de Localização e SMS para funcionar!\n")
                 sb.appendLine("Feche e abra o aplicativo novamente para aprovar as permissões.")
-
                 //showCustomDialog("Rastreador Desabilitado", sb.toString())
             }
         }

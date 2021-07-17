@@ -2,8 +2,8 @@ package com.projects.android.kd_vc.retrofit
 
 import android.content.Context
 import android.util.Log
+import com.projects.android.kd_vc.PhoneApplication
 import com.projects.android.kd_vc.room.PhoneData
-import com.projects.android.kd_vc.room.PhoneRoomDatabase
 import com.projects.android.kd_vc.utils.Encryption.AESEncyption.decrypt
 import com.projects.android.kd_vc.utils.appendLog
 import kotlinx.coroutines.CoroutineScope
@@ -16,12 +16,9 @@ import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-
 class RestApiManager {
     private val TAG = "KadeVc"
 
-    // No need to cancel this scope as it'll be torn down with the process
-    //val applicationScope = CoroutineScope(SupervisorJob())
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     fun addPhoneData(phoneData: PhoneDataInfo, onResult: (PhoneDataInfo?) -> Unit){
@@ -53,15 +50,13 @@ class RestApiManager {
         listCall.enqueue(object : Callback<List<PhoneDataInfo>> {
             override fun onResponse(call: Call<List<PhoneDataInfo>>, response: Response<List<PhoneDataInfo>>) {
                 if (!response.isSuccessful) {
-                    Log.i(TAG, "RestApiManager.getPhoneData() - *******************************************************")
                     Log.i(TAG, "RestApiManager.getPhoneData() - Response Code " + response.code())
                     appendLog("RestApiManager.getPhoneData() - Response Code ${response.code()}", context)
                     return
                 }
 
                 val phoneDataInfo: List<PhoneDataInfo> = response.body()!!
-
-                val database = PhoneRoomDatabase.getDatabase(context, applicationScope)
+                val phoneApplication = PhoneApplication()
 
                 for (dataInfo in phoneDataInfo) {
                     val dataDecrypted = decrypt(dataInfo.data)
@@ -78,23 +73,8 @@ class RestApiManager {
                     val hasInternet = dataArray[7]
                     val networkType = dataArray[8]
 
-                    /*
-                    GlobalScope.async {
-                        val phone = database.phoneDao().findByEncryptedPhoneNumber(dataInfo.number)
-
-                        Log.i(TAG, "RestApiManager.getPhoneData() - Callback onResponse: ${phone.phoneNumber}, $latitude, $longitude, $accuracy, $date, $time, $batteryLevel," +
-                                "$wifiSSID, $hasInternet, $networkType")
-                        appendLog("KdVc - RestApiManager.getPhoneData() - Callback onResponse: ${phone.phoneNumber}, $latitude, $longitude, $accuracy, $date, $time, " +
-                                "$batteryLevel, $wifiSSID, $hasInternet, $networkType", context)
-
-                        val phoneData = PhoneData(phone.phoneNumber, latitude, longitude, accuracy, date,
-                            time, batteryLevel, wifiSSID, hasInternet, networkType)
-                        database.phoneDao().insertNewPhoneData(phoneData)
-                    }
-                    */
-
                     applicationScope.launch {
-                        val phone = database.phoneDao().findByEncryptedPhoneNumber(dataInfo.number)
+                        val phone = phoneApplication.repository.findByEncryptedPhoneNumber(dataInfo.number)
 
                         Log.i(TAG, "RestApiManager.getPhoneData() - Callback onResponse: ${phone.phoneNumber}, $latitude, $longitude, $accuracy, $date, $time, $batteryLevel," +
                                 "$wifiSSID, $hasInternet, $networkType")
@@ -103,7 +83,7 @@ class RestApiManager {
 
                         val phoneData = PhoneData(phone.phoneNumber, latitude, longitude, accuracy, date,
                             time, batteryLevel, wifiSSID, hasInternet, networkType)
-                        database.phoneDao().insertNewPhoneData(phoneData)
+                        phoneApplication.repository.insertNewPhoneData(phoneData)
                     }
                 }
             }

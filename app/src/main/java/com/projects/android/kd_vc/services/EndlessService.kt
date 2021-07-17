@@ -23,12 +23,10 @@ import com.projects.android.kd_vc.*
 import com.projects.android.kd_vc.R
 import com.projects.android.kd_vc.activities.MainActivity
 import com.projects.android.kd_vc.room.MyPhoneData
-import com.projects.android.kd_vc.room.PhoneRoomDatabase
 import com.projects.android.kd_vc.utils.*
 import kotlinx.coroutines.*
 import java.text.SimpleDateFormat
 import java.util.*
-
 
 class EndlessService : Service() {
     private val TAG = "KadeVc"
@@ -38,20 +36,19 @@ class EndlessService : Service() {
     private var wakeLock: PowerManager.WakeLock? = null
     private var isServiceStarted = false
 
-    // No need to cancel this scope as it'll be torn down with the process
-    //val applicationScope = CoroutineScope(SupervisorJob())
-    val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onBind(intent: Intent): IBinder? {
-        Log.d(TAG,"EndlessService.onBind() - Some component want to bind with the service")
-        // We don't provide binding, so return null
         return null
     }
 
     override fun onCreate() {
         super.onCreate()
-        Log.d(TAG,"EndlessService.onCreate() - The service has been created")
-        appendLog("KdVc - EndlessService.onCreate() - The service has been created", this)
+
+        val formatedDate = SimpleDateFormat("dd-MM-yyyy", Locale("pt", "BR")).format(Date())
+        val formatedTime = SimpleDateFormat("HH:mm:ss", Locale("pt", "BR")).format(Date())
+        Log.d(TAG, "EndlessService.onCreate()")
+        appendLog("$formatedDate $formatedTime EndlessService.onCreate()", this)
 
         if (!isLocationEnabled()) {
             Toast.makeText(this, "Ative a localização!", Toast.LENGTH_LONG).show()
@@ -60,31 +57,19 @@ class EndlessService : Service() {
         }
 
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-        getLocationUpdates()
+        setLocationUpdates()
 
         val notification = createNotification()
         startForeground(1, notification)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val formatedDate = SimpleDateFormat("dd-MM-yyyy", Locale("pt", "BR")).format(Date())
+        val formatedTime = SimpleDateFormat("HH:mm:ss", Locale("pt", "BR")).format(Date())
         Log.d(TAG,"EndlessService.onStartCommand() executed with startId: $startId")
-        appendLog("KdVc - EndlessService.onStartCommand() - The service has been created", this)
+        appendLog("$formatedDate $formatedTime EndlessService.onStartCommand() - executed with startId: $startId", this)
 
-        if (intent != null) {
-            val action = intent.action
-            Log.d(TAG,"EndlessService.onStartCommand() using an intent with action $action")
-            appendLog("KdVc - EndlessService.onStartCommand() using an intent with action $action", this)
-
-            when (action) {
-                Actions.START.name -> startService()
-                Actions.STOP.name -> stopService()
-                Actions.RESTART.name -> restartService()
-                else -> Log.d(TAG,"EndlessService.onStartCommand() - This should never happen. No action in the received intent")
-            }
-        } else {
-            Log.d(TAG, "EndlessService.onStartCommand() with a null intent. It has been probably restarted by the system.")
-            appendLog("KdVc - EndlessService.onStartCommand() with a null intent. It has been probably restarted by the system.", this)
-        }
+        startLocationUpdates()
 
         return START_STICKY
     }
@@ -126,7 +111,7 @@ class EndlessService : Service() {
         isServiceStarted = true
         setServiceState(this, ServiceState.STARTED)
 
-        // we need this lock so our service gets not affected by Doze Mode
+        // We need this lock so our service gets not affected by Doze Mode
         wakeLock =
             (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
                 newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "EndlessService::lock").apply {
@@ -208,12 +193,7 @@ class EndlessService : Service() {
             .build()
     }
 
-    /**
-     * call this method in onCreate
-     * onLocationResult call when location is changed
-     */
-    private fun getLocationUpdates() {
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
+    private fun setLocationUpdates() {
         locationRequest = LocationRequest()
         locationRequest.interval = 60000 //60000 * 1 = 1 minute
         locationRequest.fastestInterval = 60000 //60000 * 1 = 1 minute
@@ -253,30 +233,36 @@ class EndlessService : Service() {
                         networkType = networkTypeClass(telephonyManager.networkType)
 
                     } catch(e: Exception) {
-                        Log.i(TAG, "EndlessService.getLocationUpdates().locationCallback.onLocationResult() - Exception: $e.message \n e.stackTraceToString()")
+                        Log.i(TAG, "EndlessService.setLocationUpdates().locationCallback.onLocationResult() - Exception: $e.message \n e.stackTraceToString()")
                     }
 
-                    Log.d(TAG, "EndlessService.getLocationUpdates().locationCallback.onLocationResult() - $latitude, $longitude, $accuracy, Extras: $batteryLevel, $wifiSsId, $hasInternet, $networkType")
-                    appendLog("KD_VC? - EndlessService.getLocationUpdates().locationCallback.onLocationResult() - $latitude, $longitude, $accuracy, Extras: $batteryLevel, $wifiSsId, $hasInternet, $networkType", applicationContext)
+                    Log.d(TAG, "EndlessService.setLocationUpdates().locationCallback.onLocationResult() - $latitude, $longitude, $accuracy, Extras: $batteryLevel, $wifiSsId, $hasInternet, $networkType")
+                    appendLog("KD_VC? - EndlessService.setLocationUpdates().locationCallback.onLocationResult() - $latitude, $longitude, $accuracy, Extras: $batteryLevel, $wifiSsId, $hasInternet, $networkType", applicationContext)
 
-                    if(accuracy <= 15.0) {
-                        Log.d(TAG, "EndlessService.getLocationUpdates.locationCallback.onLocationResult() - accuracy <= 15.0 - Call saveMyPhoneData() and/or sendSMS()")
+                    if(accuracy <= 20.0) {
+                        Log.d(TAG, "EndlessService.setLocationUpdates.locationCallback.onLocationResult() - accuracy <= 20.0 - Call saveMyPhoneData() and/or sendSMS()")
                         saveMyPhoneData(location.latitude.toString(), location.longitude.toString(), location.accuracy.toString(), batteryLevel, wifiSsId, hasInternet, networkType)
 
                         // Check if SMS send mode is active:
                         val smsState = getSmsState(this@EndlessService)
                         if(smsState == SmsState.ACTIVATED) {
-                            Log.d(TAG, "EndlessService.getLocationUpdates.locationCallback.onLocationResult() - SmsState = $smsState - Call sendSMS()")
+                            Log.d(TAG, "EndlessService.setLocationUpdates.locationCallback.onLocationResult() - SmsState = $smsState - Call sendSMS()")
                             sendSMS(location.latitude.toString(), location.longitude.toString(), location.accuracy.toString(), batteryLevel, wifiSsId, hasInternet, networkType)
                         }
+                        // Stop Location Updates to save battery:
+                        stopLocationUpdates()
                     }
                 }
             }
         }
     }
 
-    //start location updates
     private fun startLocationUpdates() {
+        val formatedDate = SimpleDateFormat("dd-MM-yyyy", Locale("pt", "BR")).format(Date())
+        val formatedTime = SimpleDateFormat("HH:mm:ss", Locale("pt", "BR")).format(Date())
+        Log.d(TAG, "EndlessService.startLocationUpdates()")
+        appendLog("$formatedDate $formatedTime EndlessService.startLocationUpdates()", this)
+
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -295,6 +281,11 @@ class EndlessService : Service() {
 
     // stop location updates
     private fun stopLocationUpdates() {
+        val formatedDate = SimpleDateFormat("dd-MM-yyyy", Locale("pt", "BR")).format(Date())
+        val formatedTime = SimpleDateFormat("HH:mm:ss", Locale("pt", "BR")).format(Date())
+        Log.d(TAG, "EndlessService.stopLocationUpdates()")
+        appendLog("$formatedDate $formatedTime EndlessService.stopLocationUpdates()", this)
+
         fusedLocationClient.removeLocationUpdates(locationCallback)
     }
 
@@ -314,17 +305,10 @@ class EndlessService : Service() {
 
             val encryptedData= Encryption.AESEncyption.encrypt(data)
             val myPhoneData = MyPhoneData(number, encryptedData)
-            val database = PhoneRoomDatabase.getDatabase(this, applicationScope)
-
-            /*
-            // Save data on DB to send to cloud
-            GlobalScope.async {
-                database.phoneDao().insertNewMyPhoneData(myPhoneData)
-            }
-            */
+            val phoneApplication = PhoneApplication()
 
             applicationScope.launch {
-                database.phoneDao().insertNewMyPhoneData(myPhoneData)
+                phoneApplication.repository.insertNewMyPhoneData(myPhoneData)
             }
 
         } else {
@@ -337,8 +321,8 @@ class EndlessService : Service() {
                 wifiSsId: String, hasInternet: String, networkType: String) {
         // Get phone list and send SMS to everyone:
         applicationScope.launch {
-            val database = PhoneRoomDatabase.getDatabase(this@EndlessService, applicationScope)
-            val listPhones = database.phoneDao().getAllActivePhones()
+            val phoneApplication = PhoneApplication()
+            val listPhones = phoneApplication.repository.getAllActivePhones()
 
             // Get date and time:
             val formatedDate = SimpleDateFormat("dd-MM-yyyy", Locale("pt", "BR")).format(Date())

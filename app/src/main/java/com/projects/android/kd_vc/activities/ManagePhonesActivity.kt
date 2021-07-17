@@ -38,10 +38,7 @@ class ManagePhonesActivity : AppCompatActivity() {
     private lateinit var phoneNumber: String
     private lateinit var phone: Phone
 
-    // No need to cancel this scope as it'll be torn down with the process
-    //val applicationScope = CoroutineScope(SupervisorJob())
     val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-
 
     private val phoneViewModel: PhoneViewModel by viewModels {
         PhoneViewModelFactory((application as PhoneApplication).repository)
@@ -58,8 +55,6 @@ class ManagePhonesActivity : AppCompatActivity() {
         val actionBar: ActionBar = supportActionBar!!
         actionBar.setDisplayHomeAsUpEnabled(true)
         actionBar.setHomeButtonEnabled(true)
-
-        //val database = PhoneRoomDatabase.getDatabase(this, applicationScope)
 
         phoneNumber = intent.getStringExtra("phone_number").toString()
         oldPhoneNumber = phoneNumber
@@ -113,7 +108,13 @@ class ManagePhonesActivity : AppCompatActivity() {
 
                 //val list = "$number,$name,$image"
 
-                val formattedNumber = "55" + number.substring(1, 3) + number.substring(5, 10) + number.substring(11)
+                var formattedNumber = ""
+
+                if(number.startsWith("55")) {
+                    formattedNumber = number
+                } else {
+                    formattedNumber = "55" + number.substring(1, 3) + number.substring(5, 10) + number.substring(11)
+                }
 
                 val encryptedPhoneNumber = Encryption.AESEncyption.encrypt(formattedNumber)
                 val filteredEncryptedPhoneNumber = removeSymbolsFromString(encryptedPhoneNumber)
@@ -133,14 +134,6 @@ class ManagePhonesActivity : AppCompatActivity() {
             builder.setMessage("Tem certeza que deseja apagar esse contato?")
                 .setCancelable(false)
                 .setPositiveButton("Sim") { _, _ ->
-                    /*
-                    // Delete selected phone from database
-                    GlobalScope.async {
-                        phoneViewModel.deletePhone(phone)
-                        finish()
-                    }
-                    */
-
                     // Delete selected phone from database
                     applicationScope.launch {
                         phoneViewModel.deletePhone(phone)
@@ -155,12 +148,6 @@ class ManagePhonesActivity : AppCompatActivity() {
             val alert = builder.create()
             alert.show()
         }
-
-        /*
-        val buttonReturn = findViewById<ImageButton>(R.id.button_return)
-        buttonReturn.setOnClickListener {
-            finish()
-        } */
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
@@ -180,12 +167,7 @@ class ManagePhonesActivity : AppCompatActivity() {
         if (resultCode == RESULT_OK && requestCode == pickImage) {
             imageUri = data?.data
             pictureImageView.setImageURI(imageUri)
-            //phoneViewModel.updatePhoneImage(imageUri.toString(), editNumber.text.toString())
             Log.i(TAG, "ManagePhonesActivity.onActivityResult() - imageUri: ${imageUri.toString()}")
         }
-    }
-
-    companion object {
-        const val EXTRA_REPLY = "com.example.android.phonelistsql.REPLY"
     }
 }

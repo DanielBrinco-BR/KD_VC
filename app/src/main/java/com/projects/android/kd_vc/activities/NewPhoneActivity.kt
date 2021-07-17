@@ -84,7 +84,10 @@ class NewPhoneActivity : AppCompatActivity() {
 
         val buttonImage = findViewById<Button>(R.id.button_image)
         buttonImage.setOnClickListener {
-            val gallery = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
+            val gallery = Intent(Intent.ACTION_OPEN_DOCUMENT, MediaStore.Images.Media.INTERNAL_CONTENT_URI)
+            gallery.flags = (Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                             Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                             Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION)
             startActivityForResult(gallery, pickImage)
         }
     }
@@ -105,8 +108,15 @@ class NewPhoneActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == RESULT_OK && requestCode == pickImage) {
             imageUri = data?.data
+
+            try {
+                this.contentResolver?.takePersistableUriPermission(imageUri!!, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            } catch(e: Exception) {
+                Log.e(TAG, "NewPhoneActivity.onActivityResult() - Exception: ${e.message}")
+                e.printStackTrace()
+            }
+
             pictureImageView.setImageURI(imageUri)
-            //phoneViewModel.updatePhoneImage(imageUri.toString(), editNumber.text.toString())
             Log.i(TAG, "NewPhoneActivity.onActivityResult() - imageUri: ${imageUri.toString()}")
         }
     }

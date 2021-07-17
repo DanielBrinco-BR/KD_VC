@@ -14,6 +14,7 @@ import androidx.core.net.toUri
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.projects.android.kd_vc.PhoneApplication
 import com.projects.android.kd_vc.R
 import com.projects.android.kd_vc.activities.ManagePhonesActivity
 import com.projects.android.kd_vc.activities.MapsActivity
@@ -21,13 +22,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 
-
 class PhoneListAdapter(private val context: Context) : ListAdapter<Phone, PhoneListAdapter.PhoneViewHolder>(
-    PhoneViewHolder.PhoneComparator()
-) {
+    PhoneViewHolder.PhoneComparator()) {
     private val TAG = "KadeVc"
 
-    // No need to cancel this scope as it'll be torn down with the process
     val applicationScope = CoroutineScope(SupervisorJob())
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PhoneViewHolder {
@@ -37,7 +35,7 @@ class PhoneListAdapter(private val context: Context) : ListAdapter<Phone, PhoneL
     override fun onBindViewHolder(holder: PhoneViewHolder, position: Int) {
         val current = getItem(position)
 
-        val database = PhoneRoomDatabase.getDatabase(context, applicationScope)
+        val phoneApplication = PhoneApplication()
         val textConstraintLayout = holder.itemView.findViewById<ConstraintLayout>(R.id.constraintLayout)
 
         textConstraintLayout.setOnClickListener {
@@ -56,7 +54,9 @@ class PhoneListAdapter(private val context: Context) : ListAdapter<Phone, PhoneL
 
                 Log.i(TAG,"PhoneListAdapter.onBindViewHolder(), finalPhoneNumber: $finalPhoneNumber")
 
-                if(database.phoneDao().countPhoneDataByNumber(finalPhoneNumber) > 0) {
+                val countPhoneDataByNumber = phoneApplication.repository.countPhoneDataByNumber(finalPhoneNumber)
+
+                if(countPhoneDataByNumber > 0) {
                     val intent = Intent(context, MapsActivity::class.java)
                     intent.putExtra("phone_number", finalPhoneNumber)
                     ContextCompat.startActivity(context, intent, null)
@@ -73,8 +73,6 @@ class PhoneListAdapter(private val context: Context) : ListAdapter<Phone, PhoneL
             val phoneNumber = number.replace('(', ' ').replace(')', ' ').replace('-', ' ')
             val filteredPhoneNumber = phoneNumber.replace("\\s".toRegex(), "")
             val finalPhoneNumber = "55" + filteredPhoneNumber
-
-            //val formattedNumber = "55" + number.substring(1, 3) + number.substring(5, 10) + number.substring(11)
 
             Log.i(TAG,"PhoneListAdapter.onBindViewHolder() - number: $number, finalPhoneNumber: $finalPhoneNumber")
 
@@ -105,11 +103,16 @@ class PhoneListAdapter(private val context: Context) : ListAdapter<Phone, PhoneL
 
             Log.i(TAG,"PhoneListAdapter.PhoneViewHolder.bind formattedPhoneNumber: $formattedPhoneNumber")
 
-            phoneItemView.text = data?.get(0)
-            smallPhoneItemView.text = formattedPhoneNumber // data?.get(1)
-            imageContact.setImageURI(data?.get(2)?.toUri())
-            day.text = data?.get(3)
-            time.text = data?.get(4)
+            try {
+                phoneItemView.text = data?.get(0)
+                smallPhoneItemView.text = formattedPhoneNumber // data?.get(1)
+                imageContact.setImageURI(data?.get(2)?.toUri())
+                day.text = data?.get(3)
+                time.text = data?.get(4)
+            } catch(e: Exception) {
+                Log.e(TAG, "PhoneListAdapter.PhoneViewHolder.bind - Exception: ${e.message}")
+                e.printStackTrace()
+            }
         }
 
         companion object {

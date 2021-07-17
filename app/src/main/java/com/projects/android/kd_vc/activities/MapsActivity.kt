@@ -43,10 +43,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private lateinit var dateSetListener: DatePickerDialog.OnDateSetListener
     private lateinit var binding: ActivityMapsBinding
     private lateinit var phoneNumber: String
-    //private lateinit var database: PhoneRoomDatabase
-
-    // No need to cancel this scope as it'll be torn down with the process
-    //val applicationScope = CoroutineScope(SupervisorJob())
 
     private val phoneViewModel: PhoneViewModel by viewModels {
         PhoneViewModelFactory((application as PhoneApplication).repository)
@@ -58,7 +54,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Inserindo botão return na barra de menu:
         val actionBar: ActionBar = supportActionBar!!
         actionBar.setDisplayHomeAsUpEnabled(true)
         actionBar.setHomeButtonEnabled(true)
@@ -70,9 +65,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
         phoneNumber = intent.getStringExtra("phone_number").toString()
 
-        //database = PhoneRoomDatabase.getDatabase(this, applicationScope)
-
-        // create an OnDateSetListener
         dateSetListener = object : DatePickerDialog.OnDateSetListener {
             override fun onDateSet(view: DatePicker, year: Int, monthOfYear: Int,
                                    dayOfMonth: Int) {
@@ -91,7 +83,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
                     try {
                         val lastPhoneData = listPhoneData.get(listPhoneData.size - 1)
-
                         mMap.clear()
 
                         listPhoneData.forEach {
@@ -211,7 +202,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
                     }
 
                     updateMap(LatLng(phoneData.latitude.toDouble(), phoneData.longitude.toDouble()), title, snippet, false, false)
-                    //showAllLocationsByDate()
                 } catch(e: Exception) {
                     Log.e(TAG, "MapsActivity.onCreate() - Observer: ${e.message}, \n ${e.stackTraceToString()}")
                 }

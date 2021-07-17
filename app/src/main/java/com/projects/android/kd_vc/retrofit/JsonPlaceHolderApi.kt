@@ -6,7 +6,6 @@ import retrofit2.http.Headers
 import retrofit2.http.Query
 
 interface JsonPlaceHolderApi {
-    //@GET("api/v1/phones/{number}")
     @Headers(
         "Accept: application/json",
         "Content-Type: application/json",
